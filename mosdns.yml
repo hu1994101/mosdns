@@ -32,8 +32,7 @@ plugins:
       files:
         - "/var/mosdns/geosite_cn.txt"
         - "/etc/mosdns/rule/whitelist.txt"
-        - "/var/mosdns/geosite_github.txt"
-        - "/var/mosdns/geosite_openai.txt"        
+        - "/var/mosdns/geosite_github.txt"       
 
   # 流媒体域名名单
   - tag: media_list
@@ -50,7 +49,6 @@ plugins:
     args:
       files:
         - "/var/mosdns/geosite_github.txt"
-        - "/var/mosdns/geosite_openai.txt"
 
   # 缓存插件
   - tag: lazy_cache
