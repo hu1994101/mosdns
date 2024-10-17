@@ -1,0 +1,212 @@
+log:
+  level: error
+  file: "/var/log/mosdns.log"
+
+plugins:
+  # 本地查询名单
+  - tag: local_list
+    type: domain_set
+    args:      
+      files:
+        - "/var/mosdns/geosite_cn.txt"
+        - "/etc/mosdns/rule/whitelist.txt"
+
+  # local_ptr黑名单
+  - tag: local_ptr
+    type: domain_set
+    args:
+      files:
+        - "/etc/mosdns/rule/local-ptr.txt"	
+
+  # ddns域名名单
+  - tag: ddns_list
+    type: domain_set
+    args:
+      files:
+        - "/etc/mosdns/rule/ddnslist.txt"	
+
+  # 流媒体域名名单
+  - tag: media_list
+    type: domain_set
+    args:
+      files:
+        - "/var/mosdns/geosite_netflix.txt"
+        - "/var/mosdns/geosite_disney.txt"
+        - "/var/mosdns/geosite_hulu.txt"
+
+  # 缓存插件
+  - tag: lazy_cache
+    type: cache
+    args:
+      size: 20480
+      lazy_cache_ttl: 259200
+      dump_file: /etc/mosdns/cache.dump
+      dump_interval: 600    
+ 
+   # 流媒体DNS
+  - tag: forward_media
+    type: forward
+    args:
+      concurrent: 2
+      upstreams:
+        - tag: media_google_doh
+          addr: "https://dns.google/dns-query"
+          dial_addr: "8.8.8.8"
+          socks5: "127.0.0.1:10002"
+          idle_timeout: 30
+          enable_pipeline: false
+          enable_http3: false
+          insecure_skip_verify: false      
+        - tag: media_cloudflare_doh
+          addr: "https://cloudflare-dns.com/dns-query"
+          dial_addr: "1.1.1.1"
+          socks5: "127.0.0.1:10002"
+          idle_timeout: 30
+          enable_pipeline: false
+          enable_http3: false
+          insecure_skip_verify: false
+ 
+  # 国内DNS
+  - tag: forward_local
+    type: forward
+    args:
+      concurrent: 2
+      upstreams:
+        - addr: 202.103.24.68
+        - addr: 202.103.44.150
+
+  # 国外DNS
+  - tag: forward_remote
+    type: forward
+    args:
+      concurrent: 2
+      upstreams:
+        - tag: google_doh
+          addr: "https://dns.google/dns-query"
+          dial_addr: "8.8.8.8"
+          socks5: "127.0.0.1:7891"
+          idle_timeout: 30
+          enable_pipeline: false
+          enable_http3: false
+          insecure_skip_verify: false      
+        - tag: cloudflare_doh
+          addr: "https://cloudflare-dns.com/dns-query"
+          dial_addr: "1.1.1.1"
+          socks5: "127.0.0.1:7891"
+          idle_timeout: 30
+          enable_pipeline: false
+          enable_http3: false
+          insecure_skip_verify: false
+
+  # 查询到结果刷新ttl
+  - tag: ttl_refresh
+    type: sequence
+    args:
+      - exec: ttl 1200-0
+      - exec: accept 
+
+  # ddns固定ttl
+  - tag: ddns_ttl_refresh
+    type: sequence
+    args:
+      - exec: ttl 1
+      - exec: accept 
+
+  # 国内解析
+  - tag: local_sequence
+    type: sequence
+    args:
+      - exec: $forward_local
+      - matches: has_wanted_ans 
+        exec: goto ttl_refresh       
+  
+  # 国外解析
+  - tag: remote_sequence
+    type: sequence
+    args:
+      - exec: $forward_remote
+      - matches: has_resp
+        exec: ttl 1   
+
+  # ddns解析
+  - tag: ddns_sequence
+    type: sequence
+    args:
+      - exec: $forward_local
+      - matches: has_wanted_ans       
+        exec: goto ddns_ttl_refresh
+      - exec: $remote_sequence
+
+  # 流媒体解析
+  - tag: media_sequence
+    type: sequence
+    args:
+      - exec: $forward_media
+      - matches: has_resp
+        exec: ttl 1    
+
+  # 缓存处理
+  - tag: search_cache
+    type: sequence
+    args:
+      - exec: $lazy_cache
+      - matches: has_resp
+        exec: accept
+  
+  # fallback用openclash处理
+  - tag: fallback_query
+    type: fallback
+    args:
+      primary: remote_sequence
+      secondary: remote_sequence
+      threshold: 500
+      always_standby: false
+
+  # 主要的运行逻辑插件
+  # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
+  # 否则 sequence 找不到对应插件。
+  - tag: main_sequence
+    type: sequence
+    args:    
+      # 拒绝HTTPS查询
+      - matches:
+            - qtype 65
+        exec: reject 4  
+ 
+      # 拒绝ptr黑名单
+      - matches: 
+            - qtype 12
+            - qname $local_ptr
+        exec: reject 3
+
+      # ddns域名国内解析不缓存
+      - matches: qname $ddns_list
+        exec: goto ddns_sequence
+
+      # 流媒体查询
+      - matches: qname $media_list
+        exec: goto media_sequence
+
+      # 本地域名查找缓存
+      - matches: qname $local_list
+        exec: jump search_cache
+      
+      # 本地查询
+      - matches: qname $local_list
+        exec: jump local_sequence
+ 
+      # 其他情况全部openclash处理     
+      - exec: $fallback_query
+
+ # 在同一端口启动 udp 和 tcp 服务器
+  - tag: udp_server
+    type: udp_server
+    args:
+      entry: main_sequence
+      listen: 127.0.0.1:5335
+
+  - tag: tcp_server
+    type: tcp_server
+    args:
+      entry: main_sequence
+      listen: 127.0.0.1:5335
