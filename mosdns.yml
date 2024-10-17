@@ -25,16 +25,6 @@ plugins:
       files:
         - "/etc/mosdns/rule/ddnslist.txt"	
 
-  # 缓存查询名单
-  - tag: cache_list
-    type: domain_set
-    args:      
-      files:
-        - "/var/mosdns/geosite_cn.txt"
-        - "/etc/mosdns/rule/whitelist.txt"
-        - "/var/mosdns/geosite_github.txt"
-        - "/etc/mosdns/rule/greylist.txt"        
-
   # 流媒体域名名单
   - tag: media_list
     type: domain_set
@@ -42,7 +32,6 @@ plugins:
       files:
         - "/var/mosdns/geosite_netflix.txt"
         - "/var/mosdns/geosite_disney.txt"
-        - "/var/mosdns/geosite_hulu.txt"
 
   # 固定节点域名名单
   - tag: fixed_list
@@ -153,6 +142,16 @@ plugins:
       - exec: ttl 1
       - exec: accept 
 
+  # ttl处理
+  - tag: ttl_sequence
+    type: sequence
+    args:
+      - matches:
+            - rcode 3
+        exec: ttl 1      
+      - matches: has_wanted_ans 
+        exec: goto ttl_refresh  
+
   # 国内解析
   - tag: local_sequence
     type: sequence
@@ -167,7 +166,7 @@ plugins:
     args:
       - exec: $forward_remote
       - matches: has_resp
-        exec: ttl 1   
+        exec: goto ttl_sequence  
 
   # ddns解析
   - tag: ddns_sequence
@@ -176,7 +175,7 @@ plugins:
       - exec: $forward_local
       - matches: has_wanted_ans       
         exec: goto ddns_ttl_refresh
-      - exec: $remote_sequence
+      - exec: $forward_remote
 
   # 流媒体解析
   - tag: media_sequence
@@ -186,24 +185,13 @@ plugins:
       - matches: has_resp
         exec: ttl 1    
 
-  # 缓存处理
-  - tag: search_cache
-    type: sequence
-    args:
-      - exec: $lazy_cache
-      - matches: has_resp
-        exec: accept
-
   # 固定节点解析
   - tag: fixed_sequence
     type: sequence
     args:
       - exec: $forward_fixed
-      - matches:
-            - rcode 3
-        exec: ttl 1      
-      - matches: has_wanted_ans 
-        exec: goto ttl_refresh 
+      - matches: has_resp
+        exec: goto ttl_sequence 
   
   # 主要的运行逻辑插件
   # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
@@ -230,9 +218,10 @@ plugins:
       - matches: qname $media_list
         exec: goto media_sequence
 
-      # 本地域名查找缓存
-      - matches: qname $cache_list
-        exec: jump search_cache
+      # 查找缓存
+      - exec: $lazy_cache
+      - matches: has_resp
+        exec: accept
 
       # 固定节点查询
       - matches: qname $fixed_list
