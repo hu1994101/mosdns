@@ -25,22 +25,6 @@ plugins:
       files:
         - "/etc/mosdns/rule/ddnslist.txt"	
 
-  # 流媒体域名名单
-  - tag: media_list
-    type: domain_set
-    args:
-      files:
-        - "/var/mosdns/geosite_netflix.txt"
-        - "/var/mosdns/geosite_disney.txt"
-
-  # 固定节点域名名单
-  - tag: fixed_list
-    type: domain_set
-    args:
-      files:
-        - "/var/mosdns/geosite_github.txt"
-        - "/etc/mosdns/rule/greylist.txt"        
-
   # 缓存插件
   - tag: lazy_cache
     type: cache
@@ -49,52 +33,6 @@ plugins:
       lazy_cache_ttl: 259200
       dump_file: /etc/mosdns/cache.dump
       dump_interval: 600    
- 
-   # 流媒体DNS
-  - tag: forward_media
-    type: forward
-    args:
-      concurrent: 2
-      upstreams:
-        - tag: media_google_doh
-          addr: "https://dns.google/dns-query"
-          dial_addr: "8.8.8.8"
-          socks5: "127.0.0.1:10002"
-          idle_timeout: 30
-          enable_pipeline: false
-          enable_http3: false
-          insecure_skip_verify: false      
-        - tag: media_cloudflare_doh
-          addr: "https://cloudflare-dns.com/dns-query"
-          dial_addr: "1.1.1.1"
-          socks5: "127.0.0.1:10002"
-          idle_timeout: 30
-          enable_pipeline: false
-          enable_http3: false
-          insecure_skip_verify: false
-
-   # 固定节点DNS
-  - tag: forward_fixed
-    type: forward
-    args:
-      concurrent: 2
-      upstreams:
-        - tag: fixed_google_doh
-          addr: "https://dns.google/dns-query"
-          dial_addr: "8.8.8.8"
-          socks5: "127.0.0.1:10003"
-          idle_timeout: 30
-          enable_pipeline: false
-          enable_http3: false
-          insecure_skip_verify: false      
-        - tag: fixed_cloudflare_doh
-          addr: "https://cloudflare-dns.com/dns-query"
-          dial_addr: "1.1.1.1"
-          socks5: "127.0.0.1:10003"
-          idle_timeout: 30
-          enable_pipeline: false
-          enable_http3: false
-          insecure_skip_verify: false
  
   # 国内DNS
   - tag: forward_local
@@ -114,7 +52,7 @@ plugins:
         - tag: google_doh
           addr: "https://dns.google/dns-query"
           dial_addr: "8.8.8.8"
-          socks5: "127.0.0.1:7891"
+          socks5: "127.0.0.1:10002"
           idle_timeout: 30
           enable_pipeline: false
           enable_http3: false
@@ -122,7 +60,7 @@ plugins:
         - tag: cloudflare_doh
           addr: "https://cloudflare-dns.com/dns-query"
           dial_addr: "1.1.1.1"
-          socks5: "127.0.0.1:7891"
+          socks5: "127.0.0.1:10002"
           idle_timeout: 30
           enable_pipeline: false
           enable_http3: false
@@ -132,7 +70,7 @@ plugins:
   - tag: ttl_refresh
     type: sequence
     args:
-      - exec: ttl 1200-0
+      - exec: ttl 900-0
       - exec: accept 
 
   # ddns固定ttl
@@ -179,24 +117,6 @@ plugins:
       - matches: has_resp
         exec: ttl 1
       - exec: accept        
-
-  # 流媒体解析
-  - tag: media_sequence
-    type: sequence
-    args:
-      - exec: $forward_media
-      - matches: has_resp
-        exec: ttl 1    
-      - exec: accept
-
-  # 固定节点解析
-  - tag: fixed_sequence
-    type: sequence
-    args:
-      - exec: $forward_fixed
-      - matches: has_resp
-        exec: goto ttl_sequence 
-      - exec: accept        
   
   # 主要的运行逻辑插件
   # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
@@ -219,18 +139,10 @@ plugins:
       - matches: qname $ddns_list
         exec: goto ddns_sequence
 
-      # 流媒体查询
-      - matches: qname $media_list
-        exec: goto media_sequence
-
       # 查找缓存
       - exec: $lazy_cache
       - matches: has_resp
         exec: accept
-
-      # 固定节点查询
-      - matches: qname $fixed_list
-        exec: goto fixed_sequence
       
       # 本地查询
       - matches: qname $local_list
