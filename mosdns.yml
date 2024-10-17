@@ -243,7 +243,7 @@ plugins:
         exec: jump local_sequence
  
       # 其他情况全部openclash处理     
-      - exec: $remote_sequence
+      - exec: jump remote_sequence
 
  # 在同一端口启动 udp 和 tcp 服务器
   - tag: udp_server
