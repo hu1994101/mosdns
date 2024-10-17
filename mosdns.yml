@@ -167,7 +167,7 @@ plugins:
       - exec: $forward_remote
       - matches: has_resp
         exec: goto ttl_sequence  
-
+      
   # ddns解析
   - tag: ddns_sequence
     type: sequence
@@ -177,7 +177,8 @@ plugins:
         exec: goto ddns_ttl_refresh
       - exec: $forward_remote
       - matches: has_resp
-        exec: ttl 1 
+        exec: ttl 1
+      - exec: accept        
 
   # 流媒体解析
   - tag: media_sequence
@@ -186,6 +187,7 @@ plugins:
       - exec: $forward_media
       - matches: has_resp
         exec: ttl 1    
+      - exec: accept
 
   # 固定节点解析
   - tag: fixed_sequence
@@ -194,6 +196,7 @@ plugins:
       - exec: $forward_fixed
       - matches: has_resp
         exec: goto ttl_sequence 
+      - exec: accept        
   
   # 主要的运行逻辑插件
   # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
