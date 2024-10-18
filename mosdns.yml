@@ -117,6 +117,15 @@ plugins:
       - matches: has_resp
         exec: ttl 1
       - exec: accept        
+
+  # fallback用openclash处理
+  - tag: fallback_query
+    type: fallback
+    args:
+      primary: remote_sequence
+      secondary: remote_sequence
+      threshold: 500
+      always_standby: false
   
   # 主要的运行逻辑插件
   # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
@@ -151,6 +160,9 @@ plugins:
       # 其他情况全部openclash处理     
       - exec: jump remote_sequence
 
+      # fallback处理
+      - exec: $fallback_query
+      
  # 在同一端口启动 udp 和 tcp 服务器
   - tag: udp_server
     type: udp_server
