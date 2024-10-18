@@ -50,7 +50,7 @@ plugins:
       concurrent: 2
       upstreams:
         - tag: google_doh
-          addr: "https://dns.google/dns-query"
+          addr: "https://8.8.8.8/dns-query"
           dial_addr: "8.8.8.8"
           socks5: "127.0.0.1:10002"
           idle_timeout: 30
@@ -58,13 +58,13 @@ plugins:
           enable_http3: false
           insecure_skip_verify: false      
         - tag: cloudflare_doh
-          addr: "https://cloudflare-dns.com/dns-query"
+          addr: "https://1.1.1.1/dns-query"
           dial_addr: "1.1.1.1"
           socks5: "127.0.0.1:10002"
           idle_timeout: 30
           enable_pipeline: false
           enable_http3: false
-          insecure_skip_verify: false
+          insecure_skip_verify: false      
 
   # 查询到结果刷新ttl
   - tag: ttl_refresh
@@ -117,6 +117,7 @@ plugins:
       - matches: has_resp
         exec: ttl 1
       - exec: accept        
+
   
   # 主要的运行逻辑插件
   # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
@@ -150,7 +151,7 @@ plugins:
  
       # 其他情况全部openclash处理     
       - exec: jump remote_sequence
-
+      
  # 在同一端口启动 udp 和 tcp 服务器
   - tag: udp_server
     type: udp_server
