@@ -86,7 +86,7 @@ plugins:
     args:
       - matches:
             - rcode 3
-        exec: ttl 1      
+        exec: ttl 60      
       - matches: has_wanted_ans 
         exec: goto ttl_refresh  
 
