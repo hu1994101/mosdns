@@ -49,31 +49,22 @@ plugins:
     args:
       concurrent: 3
       upstreams:
-        - tag: google_doh
-          addr: "https://dns.google/dns-query"
-          dial_addr: "8.8.8.8"
+        - tag: google_dot
+          addr: "tls://8.8.8.8"
           socks5: "127.0.0.1:10002"
-          idle_timeout: 30
-          enable_pipeline: false
-          enable_http3: false
-          insecure_skip_verify: false      
-        - tag: cloudflare_doh
-          addr: "https://cloudflare-dns.com/dns-query"
-          dial_addr: "1.1.1.1"
-          socks5: "127.0.0.1:10002"
-          idle_timeout: 30
-          enable_pipeline: false
-          enable_http3: false
+          enable_pipeline: true
           insecure_skip_verify: false
-        - tag: opendns_doh
-          addr: "https://doh.opendns.com/dns-query"
-          dial_addr: "208.67.222.222"
+        - tag: cloudflare_dot
+          addr: "tls://1.1.1.1"
           socks5: "127.0.0.1:10002"
-          idle_timeout: 30
-          enable_pipeline: false
-          enable_http3: false
-          insecure_skip_verify: false           
-
+          enable_pipeline: true
+          insecure_skip_verify: false
+        - tag: opendns_dot
+          addr: "tls://208.67.222.222"
+          socks5: "127.0.0.1:10002"
+          enable_pipeline: true
+          insecure_skip_verify: false          
+          
   # 查询到结果刷新ttl
   - tag: ttl_refresh
     type: sequence
@@ -147,11 +138,6 @@ plugins:
       # ddns域名国内解析不缓存
       - matches: qname $ddns_list
         exec: goto ddns_sequence
-
-      # 查找缓存
-      - exec: $lazy_cache
-      - matches: has_resp
-        exec: accept
       
       # 本地查询
       - matches: qname $local_list
