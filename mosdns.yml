@@ -25,6 +25,13 @@ plugins:
       files:
         - "/etc/mosdns/rule/ddnslist.txt"	
 
+  # hosts名单
+  - tag: hosts_list
+    type: hosts
+    args:
+      files:
+        - "/etc/mosdns/rule/hosts.txt"	
+
   # 缓存插件
   - tag: lazy_cache
     type: cache
@@ -50,17 +57,23 @@ plugins:
       concurrent: 3
       upstreams:
         - tag: google_dot
-          addr: "tls://8.8.8.8"
+          addr: "tls://dns.google"
+          bootstrap: "127.0.0.1:7874"
+          bootstrap_version: 4          
           socks5: "127.0.0.1:10002"
           enable_pipeline: true
           insecure_skip_verify: false
         - tag: cloudflare_dot
-          addr: "tls://1.1.1.1"
+          addr: "tls://1dot1dot1dot1.cloudflare-dns.com"
+          bootstrap: "127.0.0.1:7874"
+          bootstrap_version: 4           
           socks5: "127.0.0.1:10002"
           enable_pipeline: true
           insecure_skip_verify: false
         - tag: opendns_dot
-          addr: "tls://208.67.222.222"
+          addr: "tls://dns.sse.cisco.com"
+          bootstrap: "127.0.0.1:7874"
+          bootstrap_version: 4           
           socks5: "127.0.0.1:10002"
           enable_pipeline: true
           insecure_skip_verify: false          
@@ -142,6 +155,11 @@ plugins:
       - exec: $lazy_cache
       - matches: has_resp
         exec: accept
+
+      # 查找hosts
+      - exec: $hosts_list
+      - matches: has_wanted_ans
+        exec: goto ttl_refresh
       
       # 本地查询
       - matches: qname $local_list
