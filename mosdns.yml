@@ -138,6 +138,11 @@ plugins:
       # ddns域名国内解析不缓存
       - matches: qname $ddns_list
         exec: goto ddns_sequence
+
+      # 查找缓存
+      - exec: $lazy_cache
+      - matches: has_resp
+        exec: accept
       
       # 本地查询
       - matches: qname $local_list
