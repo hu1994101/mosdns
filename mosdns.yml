@@ -147,6 +147,11 @@ plugins:
             - qname $local_ptr
         exec: reject 3
 
+      # 查找hosts
+      - exec: $hosts_list
+      - matches: has_wanted_ans
+        exec: goto ttl_refresh
+
       # ddns域名国内解析不缓存
       - matches: qname $ddns_list
         exec: goto ddns_sequence
@@ -155,11 +160,6 @@ plugins:
       - exec: $lazy_cache
       - matches: has_resp
         exec: accept
-
-      # 查找hosts
-      - exec: $hosts_list
-      - matches: has_wanted_ans
-        exec: goto ttl_refresh
       
       # 本地查询
       - matches: qname $local_list
