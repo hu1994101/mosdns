@@ -17,6 +17,7 @@ plugins:
     args:      
       files:
         - "/var/mosdns/geosite_geolocation-!cn.txt"
+        - "/etc/mosdns/rule/greylist.txt"
 
   # local_ptr黑名单
   - tag: local_ptr
