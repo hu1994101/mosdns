@@ -56,13 +56,13 @@ plugins:
           enable_pipeline: true
           insecure_skip_verify: false
         - tag: cloudflare_dot
-          addr: "tls://1dot1dot1dot1.cloudflare-dns.com"
+          addr: "tls://one.one.one.one"
           dial_addr: "1.1.1.1"  
           socks5: "127.0.0.1:10002"
           enable_pipeline: true
           insecure_skip_verify: false
         - tag: opendns_dot
-          addr: "tls://dns.sse.cisco.com"
+          addr: "tls://dns.opendns.com"
           dial_addr: "208.67.222.222"  
           socks5: "127.0.0.1:10002"
           enable_pipeline: true
