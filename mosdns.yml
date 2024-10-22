@@ -11,6 +11,13 @@ plugins:
         - "/var/mosdns/geosite_cn.txt"
         - "/etc/mosdns/rule/whitelist.txt"
 
+  # 远程查询名单
+  - tag: remote_list
+    type: domain_set
+    args:      
+      files:
+        - "/var/mosdns/geosite_geolocation-!cn.txt"
+
   # local_ptr黑名单
   - tag: local_ptr
     type: domain_set
@@ -24,6 +31,13 @@ plugins:
     args:
       files:
         - "/etc/mosdns/rule/ddnslist.txt"	
+
+  # 本地ip名单
+  - tag: local_ip
+    type: ip_set
+    args:
+      files:
+        - "/var/mosdns/geoip_cn.txt"
 
   # 缓存插件
   - tag: lazy_cache
@@ -119,6 +133,24 @@ plugins:
       - matches: has_resp
         exec: ttl 1
       - exec: accept        
+
+  # 国内fallback解析
+  - tag: local_fallback
+    type: sequence
+    args:
+      - exec: $forward_local
+      - matches: resp_ip $local_ip 
+        exec: goto ttl_refresh
+      - exec: drop_resp
+      
+  # fallback sequence
+  - tag: fallback_sequence
+    type: fallback
+    args:
+      primary: local_fallback
+      secondary: remote_sequence
+      threshold: 500
+      always_standby: true
   
   # 主要的运行逻辑插件
   # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
@@ -150,8 +182,12 @@ plugins:
       - matches: qname $local_list
         exec: jump local_sequence
  
-      # 其他情况全部openclash处理     
-      - exec: jump remote_sequence
+      # 远程查询
+      - matches: qname $remote_list      
+        exec: jump remote_sequence
+      
+      # fallback sequence
+      - exec: $fallback_sequence
       
  # 在同一端口启动 udp 和 tcp 服务器
   - tag: udp_server
