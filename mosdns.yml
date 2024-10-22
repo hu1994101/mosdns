@@ -137,13 +137,21 @@ plugins:
         exec: ttl 1
       - exec: accept        
 
+  # 国内fallback ttl处理
+  - tag: ttl_fallback
+    type: sequence
+    args:
+      - matches: resp_ip $local_ip 
+        exec: goto ttl_refresh
+      - exec: drop_resp      
+      
   # 国内fallback解析
   - tag: local_fallback
     type: sequence
     args:
       - exec: $forward_local
-      - matches: resp_ip $local_ip 
-        exec: goto ttl_refresh
+      - matches: has_wanted_ans 
+        exec: goto ttl_fallback
       - exec: drop_resp
 
   # 国外fallback解析
@@ -160,7 +168,7 @@ plugins:
     args:
       primary: local_fallback
       secondary: remote_fallback
-      threshold: 500
+      threshold: 50
       always_standby: true
   
   # 主要的运行逻辑插件
