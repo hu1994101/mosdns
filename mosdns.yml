@@ -111,8 +111,9 @@ plugins:
     type: sequence
     args:
       - exec: $forward_local
-      - matches: has_wanted_ans 
-        exec: goto ttl_refresh       
+      - matches: has_resp
+        exec: goto ttl_sequence       
+      - exec: accept 
   
   # 国外解析
   - tag: remote_sequence
@@ -121,6 +122,7 @@ plugins:
       - exec: $forward_remote
       - matches: has_resp
         exec: goto ttl_sequence  
+      - exec: accept 
       
   # ddns解析
   - tag: ddns_sequence
@@ -142,13 +144,21 @@ plugins:
       - matches: resp_ip $local_ip 
         exec: goto ttl_refresh
       - exec: drop_resp
+
+  # 国外fallback解析
+  - tag: remote_fallback
+    type: sequence
+    args:
+      - exec: $forward_remote
+      - matches: has_resp
+        exec: goto ttl_sequence  
       
   # fallback sequence
   - tag: fallback_sequence
     type: fallback
     args:
       primary: local_fallback
-      secondary: remote_sequence
+      secondary: remote_fallback
       threshold: 500
       always_standby: true
   
@@ -180,11 +190,11 @@ plugins:
       
       # 本地查询
       - matches: qname $local_list
-        exec: jump local_sequence
+        exec: goto local_sequence
  
       # 远程查询
       - matches: qname $remote_list      
-        exec: jump remote_sequence
+        exec: goto remote_sequence
       
       # fallback sequence
       - exec: $fallback_sequence
