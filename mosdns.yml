@@ -72,7 +72,7 @@ plugins:
   - tag: ttl_refresh
     type: sequence
     args:
-      - exec: ttl 900-0
+      - exec: ttl 600-0
       - exec: accept 
 
   # ddns固定ttl
