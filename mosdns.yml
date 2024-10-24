@@ -66,13 +66,13 @@ plugins:
       upstreams:
         - addr: "https://8.8.8.8/dns-query"
           socks5: "127.0.0.1:10002"
-          idle_timeout: 60
+          idle_timeout: 120
           enable_pipeline: false
           enable_http3: false
           insecure_skip_verify: false
         - addr: "https://8.8.4.4/dns-query"
           socks5: "127.0.0.1:10002"
-          idle_timeout: 60
+          idle_timeout: 120
           enable_pipeline: false
           enable_http3: false
           insecure_skip_verify: false          
