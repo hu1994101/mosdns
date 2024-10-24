@@ -177,7 +177,7 @@ plugins:
       # 拒绝HTTPS查询
       - matches:
             - qtype 65
-        exec: reject 3  
+        exec: reject 0  
  
       # 拒绝ptr黑名单
       - matches: 
