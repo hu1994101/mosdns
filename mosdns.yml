@@ -62,21 +62,16 @@ plugins:
   - tag: forward_remote
     type: forward
     args:
-      concurrent: 2
+      concurrent: 1
       upstreams:
-        - addr: "https://8.8.8.8/dns-query"
+        - addr: "https://dns.google/dns-query"
+          dial_addr: "8.8.8.8"
           socks5: "127.0.0.1:10002"
           idle_timeout: 180
           enable_pipeline: false
           enable_http3: false
           insecure_skip_verify: false
-        - addr: "https://8.8.4.4/dns-query"
-          socks5: "127.0.0.1:10002"
-          idle_timeout: 180
-          enable_pipeline: false
-          enable_http3: false
-          insecure_skip_verify: false          
-          
+                
   # 查询到结果刷新ttl
   - tag: ttl_refresh
     type: sequence
